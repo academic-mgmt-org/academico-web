@@ -18,19 +18,19 @@ class AuthGrpcService implements AuthServiceInterface
 
         $hostname = config('services.grpc.host', 'localhost:50051');
         
-        // Instancia del cliente autogenerado
-        $this->client = new \App\Grpc\Auth\AuthServiceClient($hostname, [
+        // Instancia del cliente Eliza gRPC sin archivo proto
+        $this->client = new \App\Grpc\Eliza\ElizaServiceClient($hostname, [
             'credentials' => \Grpc\ChannelCredentials::createInsecure(),
         ]);
     }
 
     public function login(string $username, string $password): array
     {
-        $request = new \App\Grpc\Auth\LoginRequest();
-        $request->setUsername($username);
-        $request->setPassword($password);
+        $request = new \App\Grpc\Eliza\LoginRequest();
+        $request->username = $username;
+        $request->password = $password;
 
-        // Realizar la llamada unaria de gRPC
+        // Realizar la llamada unaria de gRPC apuntando a eliza.v1.ElizaService/Login
         $call = $this->client->Login($request);
         
         // Esperar la respuesta (retorna [Response, Status])
@@ -43,16 +43,14 @@ class AuthGrpcService implements AuthServiceInterface
             ];
         }
 
-        $user = $response->getUser();
-
         return [
-            'success' => $response->getSuccess(),
-            'token' => $response->getToken(),
-            'message' => $response->getMessage(),
-            'user' => $user ? [
-                'username' => $user->getUsername(),
-                'name' => $user->getName(),
-                'role' => $user->getRole(),
+            'success' => $response->success,
+            'token' => $response->token,
+            'message' => $response->message,
+            'user' => $response->success ? [
+                'username' => $username,
+                'name' => 'Usuario Autenticado (Eliza)',
+                'role' => 'user',
             ] : null,
         ];
     }
