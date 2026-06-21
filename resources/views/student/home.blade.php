@@ -1,8 +1,22 @@
 @php
+// Verificar autenticación y rol
+$session_user = session('user');
+if (!$session_user || ($session_user['role'] !== 'ESTUDIANTE' && $session_user['role'] !== 'admin')) {
+    // Si no es estudiante ni admin, redirigir a la pantalla de login
+    header("Location: /");
+    exit();
+}
+
 // User details
-$user_name = "Juan Pérez";
+$user_name = $session_user['username'] ?? "Juan Pérez";
+// Obtener primer nombre a partir del correo
 $user_first_name = "Juan";
-$user_role = "Estudiante";
+if (!empty($session_user['username'])) {
+    $email_parts = explode('@', $session_user['username']);
+    $name_parts = explode('.', $email_parts[0]);
+    $user_first_name = ucwords($name_parts[0]);
+}
+$user_role = ($session_user['role'] === 'ESTUDIANTE') ? 'Estudiante' : $session_user['role'];
 $academic_period = "2026-A";
 
 // Active statistics

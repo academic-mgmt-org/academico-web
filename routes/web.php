@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    // Limpiar la sesión al ingresar a la pantalla de login
+    session()->forget(['user', 'user_token']);
     return view('login');
 });
 
@@ -22,6 +24,11 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request, \App
     $result = $authService->login($username, $password);
 
     if ($result['success']) {
+        // Almacenar el token y la información del usuario en la sesión de Laravel
+        session([
+            'user_token' => $result['token'],
+            'user' => $result['user'] ?? null
+        ]);
         return response()->json($result, 200);
     }
 

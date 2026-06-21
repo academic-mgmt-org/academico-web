@@ -45,11 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Login API Response:', response);
 
         if (response.token) {
-          // Guardar el token ficticio en el localStorage
+          // Guardar el token en el localStorage
           localStorage.setItem('user_token', response.token);
-          alert('¡Inicio de sesión exitoso! (Token guardado)');
-          // Aquí puedes redirigir al usuario, por ejemplo:
-          // window.location.href = '/dashboard';
+          
+          // Redirigir si el rol es ESTUDIANTE
+          if (response.user && response.user.role === 'ESTUDIANTE') {
+            window.location.href = '/home';
+          } else {
+            alert('Inicio de sesión exitoso. Pero el rol (' + (response.user ? response.user.role : 'Ninguno') + ') no está configurado para esta pantalla.');
+          }
         } else {
           alert('Error de inicio de sesión: ' + (response.message || 'Credenciales incorrectas.'));
         }
