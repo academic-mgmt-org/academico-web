@@ -33,4 +33,5 @@ php artisan view:cache
 
 echo "Starting Supervisor..."
 mkdir -p /var/log/supervisor
+chown -R www-data:www-data /var/www/bootstrap/cache /var/www/storage /var/www/database
 exec supervisord -c /etc/supervisor/conf.d/supervisord.conf
