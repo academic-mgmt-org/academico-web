@@ -28,3 +28,11 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request, \App
     return response()->json($result, 401);
 });
 
+Route::get('/home', function () {
+    return view('student.home');
+})->name('home');
+
+Route::get('/dashboard', function () {
+    return view('student.home');
+})->name('dashboard');
+
