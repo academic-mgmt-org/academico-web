@@ -12,4 +12,3 @@ storage/logs/*
 .phpunit.result.cache
 docker-compose.yml
 Dockerfile
-docker
