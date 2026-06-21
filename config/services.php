@@ -37,6 +37,7 @@ return [
 
     'grpc' => [
         'host' => env('SERVICE_GRPC_HOST', 'localhost:50051'),
+        'driver' => env('SERVICE_DRIVER', 'mock'),
     ],
 
 ];
