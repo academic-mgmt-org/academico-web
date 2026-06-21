@@ -1,0 +1,16 @@
+:root {
+  --color-primary: #002f83;
+  --color-primary-dark: #002463;
+  --color-primary-light: #4A9EE8;
+  --color-bg-left: linear-gradient(180deg, #022e69 0%, #01295a 100%);
+  --color-bg-right: #f8f9fb;
+  --color-card-bg: #ffffff;
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-tertiary: #94a3b8;
+  --color-border: #cbd5e1;
+  --color-border-hover: #94a3b8;
+  --color-border-focus: #002f83;
+  --border-radius-lg: 12px;
+  --border-radius-md: 8px;
+}

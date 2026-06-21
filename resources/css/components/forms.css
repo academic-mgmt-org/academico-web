@@ -1,0 +1,125 @@
+/* Form Styles */
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: 0 14px;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-container:hover {
+  border-color: var(--color-border-hover);
+}
+
+.input-container:focus-within {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(0, 47, 131, 0.1);
+}
+
+.input-icon {
+  font-size: 17px;
+  color: var(--color-text-tertiary);
+}
+
+.form-input {
+  border: none;
+  background: transparent;
+  padding: 12px 0;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  width: 100%;
+  outline: none;
+  font-weight: 400;
+}
+
+.form-input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 0.85;
+}
+
+.password-toggle {
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  font-size: 17px;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--color-text-secondary);
+}
+
+/* Checkbox & Forgot Link */
+.actions-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-me input {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-border);
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.forgot-link {
+  font-size: 13px;
+  color: #1a56b0;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.forgot-link:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Divider styling inside form */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider-text {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}

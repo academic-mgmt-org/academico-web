@@ -1,0 +1,209 @@
+/* Login Page Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.login-area {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+/* LEFT DECORATIVE PANEL */
+.left-panel {
+  width: 45.17%;
+  background: var(--color-bg-left);
+  color: #ffffff;
+  padding: 45px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header Logo + Title */
+.header-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.header-text-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+/* Welcome & Description */
+.welcome-container {
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 14px;
+  letter-spacing: -0.5px;
+}
+
+.welcome-desc-wrapper {
+  border-left: 3px solid var(--color-primary-light);
+  padding-left: 14px;
+}
+
+.welcome-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  max-width: 440px;
+  font-weight: 400;
+}
+
+/* Blended Students Photo Area */
+.students-container {
+  width: 100%;
+  aspect-ratio: 654 / 400;
+  background-image: url('/images/backgrounds/login-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: var(--border-radius-md);
+  margin: 15px 0;
+}
+
+/* Bottom Columns */
+.features-section {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 24px;
+  margin-top: auto;
+  gap: 16px;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.feature-icon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+}
+
+.feature-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* RIGHT INTERACTIVE PANEL */
+.right-panel {
+  width: 54.83%;
+  background: var(--color-bg-right);
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Top Language Selector */
+.lang-selector-container {
+  position: absolute;
+  top: 40px;
+  right: 60px;
+}
+
+.lang-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  background: none;
+  border: none;
+  outline: none;
+  transition: color 0.2s;
+}
+
+.lang-selector:hover {
+  color: var(--color-text-primary);
+}
+
+.lang-selector i {
+  font-size: 15px;
+}
+
+/* Help Note */
+.help-section {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.help-link {
+  color: #1a56b0;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.help-link:hover {
+  text-decoration: underline;
+}
+
+.help-section i {
+  font-size: 15px;
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: var(--color-text-tertiary);
+}
+
+/* RESPONSIVE DESIGN FOR LOGIN PAGE */
+@media (max-width: 1024px) {
+  .left-panel {
+    display: none;
+  }
+  .right-panel {
+    width: 100%;
+    padding: 80px 20px 40px;
+  }
+  .lang-selector-container {
+    right: 20px;
+    top: 25px;
+  }
+}
