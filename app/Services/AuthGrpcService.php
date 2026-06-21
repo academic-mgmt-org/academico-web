@@ -43,11 +43,14 @@ class AuthGrpcService implements AuthServiceInterface
             ];
         }
 
+        $success = !empty($response->accessToken);
+
         return [
-            'success' => $response->success,
-            'token' => $response->token,
-            'message' => $response->message,
-            'user' => $response->success ? [
+            'success' => $success,
+            'token' => $response->accessToken,
+            'refreshToken' => $response->refreshToken,
+            'message' => $success ? 'Inicio de sesión exitoso.' : 'Error de autenticación.',
+            'user' => $success ? [
                 'username' => $username,
                 'name' => 'Usuario Autenticado (Eliza)',
                 'role' => 'user',
