@@ -32,4 +32,5 @@ php artisan route:cache
 php artisan view:cache
 
 echo "Starting Supervisor..."
+mkdir -p /var/log/supervisor
 exec supervisord -c /etc/supervisor/conf.d/supervisord.conf
