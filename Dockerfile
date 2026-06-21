@@ -32,6 +32,10 @@ RUN apt-get update && apt-get install -y \
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd xml zip
 
+# Install gRPC PHP C extension using mlocati installer
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions grpc
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
