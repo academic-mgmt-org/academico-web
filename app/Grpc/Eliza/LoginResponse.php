@@ -9,6 +9,17 @@ class LoginResponse
     public string $message = '';
 
     /**
+     * Decodifica e integra los datos binarios en la instancia actual
+     */
+    public function mergeFromString(string $binary): void
+    {
+        $decoded = self::decode($binary);
+        $this->success = $decoded->success;
+        $this->token = $decoded->token;
+        $this->message = $decoded->message;
+    }
+
+    /**
      * Decodifica la respuesta binaria de gRPC
      */
     public static function decode(string $binary): self

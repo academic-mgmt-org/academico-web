@@ -28,7 +28,7 @@ class AuthGrpcService implements AuthServiceInterface
     {
         $request = new \App\Grpc\Eliza\LoginRequest();
         $request->username = $username;
-        $request->password = $password;
+        $request->password = base64_encode($password);
 
         // Realizar la llamada unaria de gRPC apuntando a eliza.v1.ElizaService/Login
         $call = $this->client->Login($request);
