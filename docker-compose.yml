@@ -4,13 +4,16 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./.env:/var/www/.env
       # Persistir base de datos SQLite
       - ./database:/var/www/database
       # Persistir archivos subidos y logs
       - ./storage:/var/www/storage
+      # Montar los certificados SSL del Host (Let's Encrypt) en el contenedor de forma segura
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
