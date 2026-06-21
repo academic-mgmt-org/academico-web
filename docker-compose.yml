@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./.env:/var/www/.env
+      # Persistir base de datos SQLite
+      - ./database:/var/www/database
+      # Persistir archivos subidos y logs
+      - ./storage:/var/www/storage
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=sqlite
+    restart: unless-stopped
