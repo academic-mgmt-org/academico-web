@@ -44,17 +44,62 @@ class AuthGrpcService implements AuthServiceInterface
         }
 
         $success = !empty($response->accessToken);
+        $userData = null;
+
+        if ($success) {
+            // Decodificar el token JWT para extraer la información real del usuario
+            $payload = $this->decodeJwt($response->accessToken);
+            if ($payload) {
+                // Intentar extraer el rol de la aplicación
+                $role = 'user';
+                if (!empty($payload['applications'][0]['roles'][0]['roleName'])) {
+                    $role = $payload['applications'][0]['roles'][0]['roleName'];
+                }
+
+                $userData = [
+                    'username' => $payload['email'] ?? $username,
+                    'identifier' => $payload['identifier'] ?? '',
+                    'userStudent' => $payload['userStudent'] ?? '',
+                    'role' => $role,
+                    'permissions' => $payload['applications'][0]['roles'][0]['permissions'] ?? []
+                ];
+            }
+        }
 
         return [
             'success' => $success,
             'token' => $response->accessToken,
             'refreshToken' => $response->refreshToken,
             'message' => $success ? 'Inicio de sesión exitoso.' : 'Error de autenticación.',
-            'user' => $success ? [
-                'username' => $username,
-                'name' => 'Usuario Autenticado (Eliza)',
-                'role' => 'user',
-            ] : null,
+            'user' => $userData,
         ];
+    }
+
+    /**
+     * Decodifica la sección payload de un JWT
+     */
+    private function decodeJwt(string $jwt): ?array
+    {
+        $parts = explode('.', $jwt);
+        if (count($parts) !== 3) {
+            return null;
+        }
+
+        $payload = $parts[1];
+        
+        // Convertir de Base64Url a Base64 estándar
+        $remainder = strlen($payload) % 4;
+        if ($remainder) {
+            $padlen = 4 - $remainder;
+            $payload .= str_repeat('=', $padlen);
+        }
+        $payload = strtr($payload, '-_', '+/');
+
+        $decoded = base64_decode($payload);
+        if (!$decoded) {
+            return null;
+        }
+
+        return json_decode($decoded, true);
     }
 }
