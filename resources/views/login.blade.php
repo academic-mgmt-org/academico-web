@@ -21,8 +21,9 @@ $page_title = "Sistema Académico - Iniciar sesión";
   <!-- Load Tabler Icons webfont -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   
-  <!-- Import styles and scripts using Vite -->
-  @vite(['resources/css/app.css', 'resources/js/app.js'])
+  <!-- Import styles and scripts statically -->
+  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  <script type="module" src="{{ asset('js/app.js') }}"></script>
 </head>
 <body>
 
