@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'grpc' => [
+        'host' => env('SERVICE_GRPC_HOST', 'localhost:50051'),
+    ],
+
 ];
