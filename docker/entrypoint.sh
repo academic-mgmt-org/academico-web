@@ -13,7 +13,7 @@ fi
 
 # Run database migrations for SQLite (create file if not exists)
 if [ "${DB_CONNECTION}" = "sqlite" ] || [ -z "${DB_CONNECTION}" ]; then
-    DB_DATABASE=$(php -r "echo env('DB_DATABASE', database_path('database.sqlite'));")
+    DB_DATABASE=$(php artisan tinker --execute="echo config('database.connections.sqlite.database');")
     if [ ! -f "$DB_DATABASE" ]; then
         echo "Creating SQLite database file at $DB_DATABASE"
         mkdir -p "$(dirname "$DB_DATABASE")"
