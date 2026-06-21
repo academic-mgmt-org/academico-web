@@ -9,9 +9,9 @@ if (!$session_user || ($session_user['role'] !== 'ESTUDIANTE' && $session_user['
 
 // User details
 $user_name = $session_user['username'] ?? "Juan Pérez";
-// Obtener primer nombre a partir del correo
-$user_first_name = "Juan";
-if (!empty($session_user['username'])) {
+// Obtener primer nombre a partir del correo o usar directamente userName/name de la sesión si están presentes
+$user_first_name = $session_user['userName'] ?? $session_user['name'] ?? "Juan";
+if (empty($session_user['userName']) && empty($session_user['name']) && !empty($session_user['username'])) {
     $email_parts = explode('@', $session_user['username']);
     $name_parts = explode('.', $email_parts[0]);
     $user_first_name = ucwords($name_parts[0]);

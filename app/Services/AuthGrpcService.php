@@ -60,6 +60,7 @@ class AuthGrpcService implements AuthServiceInterface
                     'username' => $payload['email'] ?? $username,
                     'identifier' => $payload['identifier'] ?? '',
                     'userStudent' => $payload['userStudent'] ?? '',
+                    'userName' => $payload['userName'] ?? '',
                     'role' => $role,
                     'permissions' => $payload['applications'][0]['roles'][0]['permissions'] ?? []
                 ];
