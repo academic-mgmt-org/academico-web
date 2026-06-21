@@ -79,7 +79,7 @@
 }
 
 /* Responsive Button Rules */
-@media (max-width: 1400px) {
+@media (max-width: 650px) {
   .course-action-btn {
     width: 100%;
   }
