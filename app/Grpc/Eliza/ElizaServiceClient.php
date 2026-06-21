@@ -1,7 +1,7 @@
 <?php
 
 namespace Grpc {
-    if (!class_exists(\Grpc\BaseStub::class, false)) {
+    if (!extension_loaded('grpc')) {
         class BaseStub {
             public function __construct($hostname, $opts, $channel = null) {}
             protected function _simpleRequest($method, $argument, $deserialize, $metadata = [], $options = []) {
