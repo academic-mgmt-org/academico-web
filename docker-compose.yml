@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
-      - "8443:443"
+      - "443:443"
     volumes:
       - ./.env:/var/www/.env
       # Persistir base de datos SQLite
