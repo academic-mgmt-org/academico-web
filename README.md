@@ -17,7 +17,8 @@ En Azure DevOps, publicar `academico-gateway/docs` como Wiki del proyecto.
 
 La aplicacion web debe consumir el gateway como punto de entrada:
 
-- Login: `POST /usuarios/api/v1/auth/login`.
+- Login HTTP publicado por gateway: `POST /login/api/v1/auth/login`.
+- Login implementado en esta web: `POST /api/auth/login`, que delega en el servicio configurado por `SERVICE_DRIVER`.
 - Requests protegidos: enviar `Authorization: Bearer <accessToken>`.
 - No consumir microservicios internos directamente desde el navegador.
 
