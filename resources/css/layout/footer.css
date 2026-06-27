@@ -1,0 +1,64 @@
+/* Footer Styles (Login Page) */
+.footer-bar {
+  background: var(--color-bg-right);
+  border-top: 1px solid #e2e8f0;
+  padding: 22px 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+/* Shared Footer Left */
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-left i {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.footer-right {
+  color: var(--color-text-secondary);
+}
+
+/* Footer Styles (Dashboard) */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  color: #344d66;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-top: 1px solid #e3e9f2;
+  margin-top: 20px;
+}
+
+.footer-shield-icon {
+  width: 18px;
+  height: 18px;
+  stroke: #445c83;
+}
+
+/* RESPONSIVE DESIGN FOR FOOTERS */
+@media (max-width: 1024px) {
+  .footer-bar {
+    padding: 20px;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 1400px) {
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
