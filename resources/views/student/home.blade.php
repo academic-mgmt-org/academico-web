@@ -264,10 +264,50 @@ $notifications_count = !empty($notifications_payload)
           </div>
 
           <!-- Notifications Alert -->
-          <button class="notification-btn" aria-label="Ver {{ $notifications_count }} notificaciones nuevas">
-            <svg class="icon header-icon"><use xlink:href="#i-bell"></use></svg>
-            <span class="notification-badge">{{ $notifications_count }}</span>
-          </button>
+          <div class="notification-menu" data-notification-menu>
+            <button
+              class="notification-btn"
+              type="button"
+              aria-label="Ver {{ $notifications_count }} notificaciones nuevas"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="notification-dropdown"
+              data-notification-toggle
+            >
+              <svg class="icon header-icon"><use xlink:href="#i-bell"></use></svg>
+              <span class="notification-badge">{{ $notifications_count }}</span>
+            </button>
+
+            <div
+              id="notification-dropdown"
+              class="notification-dropdown"
+              role="menu"
+              aria-label="Notificaciones recientes"
+              hidden
+              data-notification-dropdown
+            >
+              <div class="notification-dropdown-header">
+                <span class="notification-dropdown-title">Notificaciones</span>
+                <span class="notification-dropdown-count">{{ $notifications_count }} nuevas</span>
+              </div>
+
+              <div class="notification-dropdown-list">
+                @foreach ($notifications as $notification)
+                <div class="notification-dropdown-item" role="menuitem" tabindex="-1">
+                  <div class="notif-icon-container">
+                    <svg class="icon notif-icon"><use xlink:href="#{{ $notification['icon_id'] }}"></use></svg>
+                  </div>
+                  <div class="notif-details">
+                    <p class="notif-text">{{ $notification['text'] }}</p>
+                    <span class="notif-time">{{ $notification['time'] }}</span>
+                  </div>
+                </div>
+                @endforeach
+              </div>
+
+              <a href="#latest-notifications" class="notification-dropdown-link">Ver todas</a>
+            </div>
+          </div>
 
           <!-- User Profile -->
           <div class="user-profile">
@@ -475,7 +515,7 @@ $notifications_count = !empty($notifications_payload)
             </section>
 
             <!-- Latest Notifications Widget -->
-            <section class="card notifications-card">
+            <section class="card notifications-card" id="latest-notifications">
               <div class="card-header">
                 <h3 class="card-title">Últimas notificaciones</h3>
                 <a href="#" class="card-header-link">Ver todas</a>
