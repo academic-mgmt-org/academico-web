@@ -74,6 +74,14 @@ RUN getent group www-data || addgroup -g 82 -S www-data \
 
 RUN sed -i 's/user nginx;/user www-data;/g' /etc/nginx/nginx.conf
 
+RUN mkdir -p /var/lib/nginx/tmp/client_body \
+    /var/lib/nginx/tmp/proxy \
+    /var/lib/nginx/tmp/fastcgi \
+    /var/lib/nginx/tmp/uwsgi \
+    /var/lib/nginx/tmp/scgi \
+    /run/nginx \
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run/nginx
+
 # Configure PHP-FPM to run as www-data and listen on port 9000
 RUN sed -i 's/listen = .*/listen = 127.0.0.1:9000/g' /etc/php83/php-fpm.d/www.conf \
     && sed -i 's/user = .*/user = www-data/g' /etc/php83/php-fpm.d/www.conf \
