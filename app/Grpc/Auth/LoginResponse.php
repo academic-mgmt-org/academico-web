@@ -8,52 +8,80 @@ namespace App\Grpc\Auth;
  */
 class LoginResponse
 {
-    protected bool $success = false;
-    protected string $token = '';
-    protected string $message = '';
-    protected ?User $user = null;
+    public string $accessToken = '';
+    public string $refreshToken = '';
+    public bool $mfaRequired = false;
+    public bool $requiresAppUpdate = false;
+    public string $tokenType = '';
+    public int $expiresIn = 0;
+    public string $sessionId = '';
 
-    public function getSuccess(): bool
+    public function mergeFromString(string $binary): void
     {
-        return $this->success;
+        $decoded = self::decode($binary);
+        $this->accessToken = $decoded->accessToken;
+        $this->refreshToken = $decoded->refreshToken;
+        $this->mfaRequired = $decoded->mfaRequired;
+        $this->requiresAppUpdate = $decoded->requiresAppUpdate;
+        $this->tokenType = $decoded->tokenType;
+        $this->expiresIn = $decoded->expiresIn;
+        $this->sessionId = $decoded->sessionId;
     }
 
-    public function setSuccess(bool $success): self
+    public static function decode(string $binary): self
     {
-        $this->success = $success;
-        return $this;
+        $response = new self();
+        $offset = 0;
+        $length = strlen($binary);
+
+        while ($offset < $length) {
+            $tagVarint = self::readVarint($binary, $offset);
+            $wireType = $tagVarint & 0x07;
+            $fieldNumber = $tagVarint >> 3;
+
+            if ($wireType === 2) {
+                $len = self::readVarint($binary, $offset);
+                $str = substr($binary, $offset, $len);
+                $offset += $len;
+
+                if ($fieldNumber === 1) {
+                    $response->accessToken = $str;
+                } elseif ($fieldNumber === 2) {
+                    $response->refreshToken = $str;
+                } elseif ($fieldNumber === 5) {
+                    $response->tokenType = $str;
+                } elseif ($fieldNumber === 7) {
+                    $response->sessionId = $str;
+                }
+            } elseif ($wireType === 0) {
+                $value = self::readVarint($binary, $offset);
+                if ($fieldNumber === 3) {
+                    $response->mfaRequired = (bool) $value;
+                } elseif ($fieldNumber === 4) {
+                    $response->requiresAppUpdate = (bool) $value;
+                } elseif ($fieldNumber === 6) {
+                    $response->expiresIn = $value;
+                }
+            } else {
+                break;
+            }
+        }
+
+        return $response;
     }
 
-    public function getToken(): string
+    private static function readVarint(string $binary, int &$offset): int
     {
-        return $this->token;
-    }
-
-    public function setToken(string $token): self
-    {
-        $this->token = $token;
-        return $this;
-    }
-
-    public function getMessage(): string
-    {
-        return $this->message;
-    }
-
-    public function setMessage(string $message): self
-    {
-        $this->message = $message;
-        return $this;
-    }
-
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
-
-    public function setUser(?User $user): self
-    {
-        $this->user = $user;
-        return $this;
+        $value = 0;
+        $shift = 0;
+        while ($offset < strlen($binary)) {
+            $byte = ord($binary[$offset++]);
+            $value |= ($byte & 0x7f) << $shift;
+            if (!($byte & 0x80)) {
+                break;
+            }
+            $shift += 7;
+        }
+        return $value;
     }
 }

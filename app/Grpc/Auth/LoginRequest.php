@@ -8,28 +8,42 @@ namespace App\Grpc\Auth;
  */
 class LoginRequest
 {
-    protected string $username = '';
-    protected string $password = '';
+    public string $username = '';
+    public string $password = '';
+    public string $appVersion = '';
+    public string $passwordEncoding = '';
 
-    public function getUsername(): string
+    public function serializeToString(): string
     {
-        return $this->username;
+        $binary = '';
+
+        if ($this->username !== '') {
+            $binary .= "\x0a" . $this->encodeVarint(strlen($this->username)) . $this->username;
+        }
+
+        if ($this->password !== '') {
+            $binary .= "\x12" . $this->encodeVarint(strlen($this->password)) . $this->password;
+        }
+
+        if ($this->appVersion !== '') {
+            $binary .= "\x1a" . $this->encodeVarint(strlen($this->appVersion)) . $this->appVersion;
+        }
+
+        if ($this->passwordEncoding !== '') {
+            $binary .= "\x22" . $this->encodeVarint(strlen($this->passwordEncoding)) . $this->passwordEncoding;
+        }
+
+        return $binary;
     }
 
-    public function setUsername(string $username): self
+    private function encodeVarint(int $value): string
     {
-        $this->username = $username;
-        return $this;
-    }
-
-    public function getPassword(): string
-    {
-        return $this->password;
-    }
-
-    public function setPassword(string $password): self
-    {
-        $this->password = $password;
-        return $this;
+        $bytes = '';
+        while ($value > 0x7f) {
+            $bytes .= chr(($value & 0x7f) | 0x80);
+            $value >>= 7;
+        }
+        $bytes .= chr($value);
+        return $bytes;
     }
 }

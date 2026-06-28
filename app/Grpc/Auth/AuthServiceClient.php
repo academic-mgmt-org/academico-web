@@ -10,14 +10,8 @@ namespace Grpc {
                 return new class {
                     public function wait() {
                         $response = new \App\Grpc\Auth\LoginResponse();
-                        $response->setSuccess(true);
-                        $response->setToken('mock-gRPC-token-via-fallback-stub');
-                        
-                        $user = new \App\Grpc\Auth\User();
-                        $user->setUsername('fallback_user');
-                        $user->setName('Usuario Fallback (gRPC C-ext missing)');
-                        $user->setRole('admin');
-                        $response->setUser($user);
+                        $response->accessToken = 'mock-auth-token-via-fallback-stub';
+                        $response->refreshToken = 'mock-auth-refresh-token';
 
                         $status = new \stdClass();
                         $status->code = 0; // STATUS_OK
@@ -54,7 +48,7 @@ namespace App\Grpc\Auth {
         public function Login(\App\Grpc\Auth\LoginRequest $argument, $metadata = [], $options = [])
         {
             return $this->_simpleRequest(
-                '/auth.AuthService/Login',
+                '/auth.v1.AuthService/Login',
                 $argument,
                 ['\App\Grpc\Auth\LoginResponse', 'decode'],
                 $metadata,

@@ -18,19 +18,20 @@ class AuthGrpcService implements AuthServiceInterface
 
         $hostname = config('services.grpc.host', 'localhost:50051');
         
-        // Instancia del cliente Eliza gRPC sin archivo proto
-        $this->client = new \App\Grpc\Eliza\ElizaServiceClient($hostname, [
+        // Instancia del cliente Auth gRPC sin archivo proto generado.
+        $this->client = new \App\Grpc\Auth\AuthServiceClient($hostname, [
             'credentials' => \Grpc\ChannelCredentials::createInsecure(),
         ]);
     }
 
     public function login(string $username, string $password): array
     {
-        $request = new \App\Grpc\Eliza\LoginRequest();
+        $request = new \App\Grpc\Auth\LoginRequest();
         $request->username = $username;
         $request->password = base64_encode($password);
+        $request->passwordEncoding = 'base64';
 
-        // Realizar la llamada unaria de gRPC apuntando a eliza.v1.ElizaService/Login
+        // Realizar la llamada unaria de gRPC apuntando a auth.v1.AuthService/Login
         $call = $this->client->Login($request);
         
         // Esperar la respuesta (retorna [Response, Status])
