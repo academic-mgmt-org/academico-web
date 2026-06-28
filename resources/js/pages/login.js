@@ -1,23 +1,54 @@
 // Login Page Logic
-import { login } from '../services/auth.service.js';
+import { login, refreshSession } from '../services/auth.service.js';
 
-function redirectAuthenticatedUser() {
-  const hasSession =
+let redirectCheckPromise = null;
+
+function hasStoredSession() {
+  return Boolean(
     localStorage.getItem('user_token') ||
-    localStorage.getItem('user_refresh_token');
-
-  if (window.location.pathname === '/' && hasSession) {
-    window.location.replace('/home');
-    return true;
-  }
-
-  return false;
+    localStorage.getItem('user_refresh_token')
+  );
 }
 
-window.addEventListener('pageshow', redirectAuthenticatedUser);
+function clearStoredSession() {
+  localStorage.removeItem('user_token');
+  localStorage.removeItem('user_refresh_token');
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (redirectAuthenticatedUser()) {
+async function redirectAuthenticatedUser() {
+  if (window.location.pathname !== '/' || !hasStoredSession()) {
+    return false;
+  }
+
+  if (redirectCheckPromise) {
+    return redirectCheckPromise;
+  }
+
+  redirectCheckPromise = (async () => {
+    try {
+      const response = await refreshSession();
+
+      if (response.token) {
+        window.location.replace('/home');
+        return true;
+      }
+    } catch (error) {
+      console.warn('No se pudo renovar la sesión guardada:', error);
+    }
+
+    clearStoredSession();
+    return false;
+  })();
+
+  return redirectCheckPromise;
+}
+
+window.addEventListener('pageshow', () => {
+  void redirectAuthenticatedUser();
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (await redirectAuthenticatedUser()) {
     return;
   }
 
