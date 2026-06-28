@@ -231,7 +231,7 @@ $notifications_count = !empty($notifications_payload)
           <svg class="icon"><use xlink:href="#i-gear"></use></svg>
           <span>Configuración</span>
         </a>
-        <a href="#" class="nav-item logout">
+        <a href="/" class="nav-item logout" data-logout-link>
           <svg class="icon"><use xlink:href="#i-logout"></use></svg>
           <span>Cerrar sesión</span>
         </a>
@@ -555,5 +555,19 @@ $notifications_count = !empty($notifications_payload)
 
   </div>
 
+  <script>
+    (() => {
+      const token = @json(session('user_token'));
+      const refreshToken = @json(session('user_refresh_token'));
+
+      if (token) {
+        window.localStorage.setItem('user_token', token);
+      }
+
+      if (refreshToken) {
+        window.localStorage.setItem('user_refresh_token', refreshToken);
+      }
+    })();
+  </script>
 </body>
 </html>

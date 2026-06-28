@@ -1,3 +1,5 @@
+import { logout } from '../services/auth.service.js';
+
 function setupNotificationMenu() {
   const menu = document.querySelector('[data-notification-menu]');
   if (!menu) {
@@ -43,4 +45,26 @@ function setupNotificationMenu() {
   });
 }
 
+function setupLogoutAction() {
+  const logoutLink = document.querySelector('[data-logout-link]');
+  if (!logoutLink) {
+    return;
+  }
+
+  logoutLink.addEventListener('click', async (event) => {
+    event.preventDefault();
+    logoutLink.setAttribute('aria-busy', 'true');
+
+    try {
+      await logout();
+    } catch (error) {
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('user_refresh_token');
+    } finally {
+      window.location.href = '/';
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', setupNotificationMenu);
+document.addEventListener('DOMContentLoaded', setupLogoutAction);

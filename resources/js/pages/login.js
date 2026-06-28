@@ -1,7 +1,26 @@
 // Login Page Logic
 import { login } from '../services/auth.service.js';
 
+function redirectAuthenticatedUser() {
+  const hasSession =
+    localStorage.getItem('user_token') ||
+    localStorage.getItem('user_refresh_token');
+
+  if (window.location.pathname === '/' && hasSession) {
+    window.location.replace('/home');
+    return true;
+  }
+
+  return false;
+}
+
+window.addEventListener('pageshow', redirectAuthenticatedUser);
+
 document.addEventListener('DOMContentLoaded', () => {
+  if (redirectAuthenticatedUser()) {
+    return;
+  }
+
   const passwordInput = document.getElementById('password');
   const passwordToggle = document.getElementById('passwordToggle');
 
@@ -47,6 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.token) {
           // Guardar el token en el localStorage
           localStorage.setItem('user_token', response.token);
+          if (response.refreshToken) {
+            localStorage.setItem('user_refresh_token', response.refreshToken);
+          }
           
           // Redirigir si el rol es ESTUDIANTE
           if (response.user && response.user.role === 'ESTUDIANTE') {
@@ -64,4 +86,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-

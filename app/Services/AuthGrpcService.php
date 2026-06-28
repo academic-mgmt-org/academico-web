@@ -44,36 +44,72 @@ class AuthGrpcService implements AuthServiceInterface
             ];
         }
 
-        $success = !empty($response->accessToken);
-        $userData = null;
+        return $this->loginResponseToArray(
+            $response,
+            'Inicio de sesión exitoso.',
+            'Error de autenticación.',
+            $username
+        );
+    }
 
-        if ($success) {
-            // Decodificar el token JWT para extraer la información real del usuario
-            $payload = $this->decodeJwt($response->accessToken);
-            if ($payload) {
-                // Intentar extraer el rol de la aplicación
-                $role = 'user';
-                if (!empty($payload['applications'][0]['roles'][0]['roleName'])) {
-                    $role = $payload['applications'][0]['roles'][0]['roleName'];
-                }
+    public function refresh(string $refreshToken): array
+    {
+        if (!$refreshToken) {
+            return [
+                'success' => false,
+                'message' => 'Refresh token no disponible.',
+            ];
+        }
 
-                $userData = [
-                    'username' => $payload['email'] ?? $username,
-                    'identifier' => $payload['identifier'] ?? '',
-                    'userStudent' => $payload['userStudent'] ?? '',
-                    'userName' => $payload['userName'] ?? '',
-                    'role' => $role,
-                    'permissions' => $payload['applications'][0]['roles'][0]['permissions'] ?? []
-                ];
-            }
+        $request = new \App\Grpc\Auth\RefreshTokenRequest();
+        $request->refreshToken = $refreshToken;
+
+        $call = $this->client->RefreshToken($request);
+        list($response, $status) = $call->wait();
+
+        if ($status->code !== \Grpc\STATUS_OK) {
+            return [
+                'success' => false,
+                'message' => 'Error gRPC (' . $status->code . '): ' . $status->details,
+            ];
+        }
+
+        return $this->loginResponseToArray(
+            $response,
+            'Sesión renovada correctamente.',
+            'No se pudo renovar la sesión.'
+        );
+    }
+
+    public function logout(?string $token = null, ?string $refreshToken = null): array
+    {
+        if (!$token && !$refreshToken) {
+            return [
+                'success' => false,
+                'revoked' => false,
+                'message' => 'Token de sesión no disponible.',
+            ];
+        }
+
+        $request = new \App\Grpc\Auth\LogoutRequest();
+        $request->token = $token ?? '';
+        $request->refreshToken = $refreshToken ?? '';
+
+        $call = $this->client->Logout($request);
+        list($response, $status) = $call->wait();
+
+        if ($status->code !== \Grpc\STATUS_OK) {
+            return [
+                'success' => false,
+                'revoked' => false,
+                'message' => 'Error gRPC (' . $status->code . '): ' . $status->details,
+            ];
         }
 
         return [
-            'success' => $success,
-            'token' => $response->accessToken,
-            'refreshToken' => $response->refreshToken,
-            'message' => $success ? 'Inicio de sesión exitoso.' : 'Error de autenticación.',
-            'user' => $userData,
+            'success' => (bool) $response->success,
+            'revoked' => (bool) $response->success,
+            'message' => $response->message ?: 'Sesión cerrada correctamente.',
         ];
     }
 
@@ -103,5 +139,53 @@ class AuthGrpcService implements AuthServiceInterface
         }
 
         return json_decode($decoded, true);
+    }
+
+    private function loginResponseToArray(
+        \App\Grpc\Auth\LoginResponse $response,
+        string $successMessage,
+        string $failureMessage,
+        ?string $fallbackUsername = null
+    ): array {
+        $success = !empty($response->accessToken);
+        $userData = null;
+
+        if ($success) {
+            $userData = $this->userDataFromToken($response->accessToken, $fallbackUsername);
+        }
+
+        return [
+            'success' => $success,
+            'token' => $response->accessToken,
+            'refreshToken' => $response->refreshToken,
+            'expiresIn' => $response->expiresIn,
+            'sessionId' => $response->sessionId,
+            'message' => $success ? $successMessage : $failureMessage,
+            'user' => $userData,
+        ];
+    }
+
+    private function userDataFromToken(string $token, ?string $fallbackUsername = null): ?array
+    {
+        $payload = $this->decodeJwt($token);
+        if (!$payload) {
+            return null;
+        }
+
+        $role = 'user';
+        if (!empty($payload['applications'][0]['roles'][0]['roleName'])) {
+            $role = $payload['applications'][0]['roles'][0]['roleName'];
+        } elseif (!empty($payload['role'])) {
+            $role = $payload['role'];
+        }
+
+        return [
+            'username' => $payload['email'] ?? $fallbackUsername ?? '',
+            'identifier' => $payload['identifier'] ?? '',
+            'userStudent' => $payload['userStudent'] ?? '',
+            'userName' => $payload['userName'] ?? '',
+            'role' => $role,
+            'permissions' => $payload['applications'][0]['roles'][0]['permissions'] ?? []
+        ];
     }
 }
