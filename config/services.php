@@ -40,4 +40,12 @@ return [
         'driver' => env('SERVICE_DRIVER', 'mock'),
     ],
 
+    'gateway' => [
+        'url' => env('ACADEMICO_GATEWAY_URL', 'http://host.docker.internal:3000'),
+    ],
+
+    'notifications' => [
+        'recent_path' => env('NOTIFICATIONS_RECENT_PATH', '/notificaciones/api/v1/notificaciones/recientes'),
+    ],
+
 ];

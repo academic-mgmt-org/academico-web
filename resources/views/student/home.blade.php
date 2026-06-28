@@ -23,7 +23,6 @@ $academic_period = "2026-A";
 $active_courses_count = 5;
 $current_average = 8.75;
 $requests_count = 2;
-$notifications_count = 3;
 
 // Active courses array
 $courses = [
@@ -140,6 +139,14 @@ $notifications = [
         "icon_id" => "i-calendar"
     ]
 ];
+
+if (!empty($notifications_payload) && !empty($notifications_payload['notifications'])) {
+    $notifications = $notifications_payload['notifications'];
+}
+
+$notifications_count = !empty($notifications_payload)
+    ? (int) ($notifications_payload['unreadCount'] ?? count($notifications))
+    : count($notifications);
 @endphp
 <!DOCTYPE html>
 <html lang="es">

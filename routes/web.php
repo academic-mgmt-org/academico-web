@@ -35,11 +35,26 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request, \App
     return response()->json($result, 401);
 });
 
-Route::get('/home', function () {
-    return view('student.home');
+Route::get('/home', function (\App\Services\NotificationGatewayService $notificationService) {
+    $notificationsPayload = $notificationService->recent(
+        session('user_token'),
+        session('user'),
+        3
+    );
+
+    return view('student.home', [
+        'notifications_payload' => $notificationsPayload,
+    ]);
 })->name('home');
 
-Route::get('/dashboard', function () {
-    return view('student.home');
-})->name('dashboard');
+Route::get('/dashboard', function (\App\Services\NotificationGatewayService $notificationService) {
+    $notificationsPayload = $notificationService->recent(
+        session('user_token'),
+        session('user'),
+        3
+    );
 
+    return view('student.home', [
+        'notifications_payload' => $notificationsPayload,
+    ]);
+})->name('dashboard');
