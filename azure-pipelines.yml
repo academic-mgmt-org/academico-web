@@ -263,7 +263,7 @@ stages:
         COMPOSE_FILE: $(composeFile)
         COMPOSE_SOURCE_FILE: $(Build.SourcesDirectory)/$(composeFile)
         SERVICE_NAME: $(serviceName)
-        SSH_PRIVATE_KEY_B64: $(PROD_SSH_PRIVATE_KEY_B64)
+        SSH_PRIVATE_KEY_B64: $(DEV_SSH_PRIVATE_KEY_B64)
         APP_KEY: $(APP_KEY)
         TARGET_APP_ENV: local
         APP_DEBUG: 'true'
