@@ -29,8 +29,8 @@ variables:
   httpPort: '80'
   httpsPort: '443'
 
-  serviceDriver: 'mock'
-  serviceGrpcHost: 'host.docker.internal:50051'
+  serviceDriver: 'grpc'
+  serviceGrpcHost: 'host.docker.internal:50050'
   gatewayUrl: 'http://host.docker.internal:3000'
   notificationsRecentPath: '/notificaciones/api/v1/notificaciones/recientes'
 
