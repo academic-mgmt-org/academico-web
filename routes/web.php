@@ -1,27 +1,31 @@
 <?php
 
+use App\Services\Contracts\AuthServiceInterface;
+use App\Services\NotificationGatewayService;
 use App\Support\AuthSession;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (\App\Services\Contracts\AuthServiceInterface $authService) {
+Route::get('/', function (AuthServiceInterface $authService) {
     if ((session('user_token') || session('user_refresh_token')) && AuthSession::renew($authService)) {
         return redirect()->route('home');
     }
 
     // Limpiar la sesión al ingresar a la pantalla de login sin credenciales renovables
     AuthSession::clear();
+
     return view('login');
 });
 
-Route::post('/api/auth/login', function (\Illuminate\Http\Request $request, \App\Services\Contracts\AuthServiceInterface $authService) {
+Route::post('/api/auth/login', function (Request $request, AuthServiceInterface $authService) {
     // Obtener las credenciales enviadas
     $username = $request->input('username') ?? $request->input('email');
     $password = $request->input('password');
 
-    if (!$username || !$password) {
+    if (! $username || ! $password) {
         return response()->json([
             'success' => false,
-            'message' => 'Credenciales inválidas o faltantes.'
+            'message' => 'Credenciales inválidas o faltantes.',
         ], 400);
     }
 
@@ -31,16 +35,17 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request, \App
     if ($result['success']) {
         // Almacenar el token y la información del usuario en la sesión de Laravel
         AuthSession::store($result);
+
         return response()->json($result, 200);
     }
 
     return response()->json($result, 401);
 });
 
-Route::post('/api/auth/refresh', function (\Illuminate\Http\Request $request, \App\Services\Contracts\AuthServiceInterface $authService) {
+Route::post('/api/auth/refresh', function (Request $request, AuthServiceInterface $authService) {
     $refreshToken = $request->input('refreshToken') ?: session('user_refresh_token');
 
-    if (!$refreshToken) {
+    if (! $refreshToken) {
         return response()->json([
             'success' => false,
             'message' => 'Refresh token no disponible.',
@@ -51,6 +56,7 @@ Route::post('/api/auth/refresh', function (\Illuminate\Http\Request $request, \A
 
     if ($result['success'] ?? false) {
         AuthSession::store($result);
+
         return response()->json($result, 200);
     }
 
@@ -59,7 +65,7 @@ Route::post('/api/auth/refresh', function (\Illuminate\Http\Request $request, \A
     return response()->json($result, 401);
 });
 
-Route::post('/api/auth/logout', function (\Illuminate\Http\Request $request, \App\Services\Contracts\AuthServiceInterface $authService) {
+Route::post('/api/auth/logout', function (Request $request, AuthServiceInterface $authService) {
     $token = $request->input('token') ?: session('user_token');
     $refreshToken = $request->input('refreshToken') ?: session('user_refresh_token');
 
@@ -76,8 +82,8 @@ Route::post('/api/auth/logout', function (\Illuminate\Http\Request $request, \Ap
     ], ($result['success'] ?? false) ? 200 : 202);
 });
 
-Route::get('/home', function (\App\Services\NotificationGatewayService $notificationService, \App\Services\Contracts\AuthServiceInterface $authService) {
-    if (!AuthSession::renew($authService) || !session('user_token') || !session('user')) {
+Route::get('/home', function (NotificationGatewayService $notificationService, AuthServiceInterface $authService) {
+    if (! AuthSession::renew($authService) || ! session('user_token') || ! session('user')) {
         return redirect('/');
     }
 
@@ -92,8 +98,8 @@ Route::get('/home', function (\App\Services\NotificationGatewayService $notifica
     ]);
 })->name('home');
 
-Route::get('/dashboard', function (\App\Services\NotificationGatewayService $notificationService, \App\Services\Contracts\AuthServiceInterface $authService) {
-    if (!AuthSession::renew($authService) || !session('user_token') || !session('user')) {
+Route::get('/dashboard', function (NotificationGatewayService $notificationService, AuthServiceInterface $authService) {
+    if (! AuthSession::renew($authService) || ! session('user_token') || ! session('user')) {
         return redirect('/');
     }
 

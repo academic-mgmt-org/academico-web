@@ -33,11 +33,11 @@ class AuthSession
         $hasToken = (bool) session('user_token');
         $refreshToken = session('user_refresh_token');
 
-        if ($hasToken && !self::tokenNeedsRefresh()) {
+        if ($hasToken && ! self::tokenNeedsRefresh()) {
             return true;
         }
 
-        if (!$refreshToken) {
+        if (! $refreshToken) {
             return $hasToken;
         }
 
@@ -45,10 +45,12 @@ class AuthSession
 
         if ($result['success'] ?? false) {
             self::store($result);
+
             return true;
         }
 
         self::clear();
+
         return false;
     }
 
@@ -56,7 +58,7 @@ class AuthSession
     {
         $expiresAt = session('user_token_expires_at');
 
-        if (!$expiresAt) {
+        if (! $expiresAt) {
             return true;
         }
 

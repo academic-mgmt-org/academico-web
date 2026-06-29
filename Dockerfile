@@ -67,6 +67,9 @@ COPY --from=assets-builder /app/public/build ./public/build
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
+# Prepare Laravel's public disk link inside the runtime image.
+RUN php artisan storage:link --force
+
 # Configure Nginx to run as www-data instead of nginx to match PHP-FPM permissions
 # (First ensure user www-data exists in Alpine; the shadow package handles it, or we can use the default www-data group/user in alpine)
 RUN getent group www-data || addgroup -g 82 -S www-data \

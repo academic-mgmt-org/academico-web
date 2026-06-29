@@ -30,14 +30,37 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
-      displayName: Build and push image to container registry
+      displayName: Login to container registry
       inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        buildContext: '$(Build.SourcesDirectory)'
+        command: login
         containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-          latest
-        addPipelineData: false
+
+    - script: |
+        set -euo pipefail
+
+        docker build \
+          -f "$(dockerfilePath)" \
+          -t "$(containerRegistry)/$(imageRepository):$(tag)" \
+          -t "$(containerRegistry)/$(imageRepository):latest" \
+          "$(Build.SourcesDirectory)"
+      displayName: Build image
+
+    - script: |
+        set -euo pipefail
+
+        IMAGE="$(containerRegistry)/$(imageRepository):$(tag)"
+
+        docker run --rm --entrypoint sh "$IMAGE" -lc 'composer validate --strict --ansi && composer check-platform-reqs --ansi'
+        docker run --rm --entrypoint php "$IMAGE" artisan about --ansi
+        docker run --rm --entrypoint php "$IMAGE" artisan route:list --ansi
+        docker run --rm --entrypoint sh "$IMAGE" -lc 'php artisan config:cache --ansi && php artisan route:cache --ansi && php artisan view:cache --ansi'
+        docker run --rm --entrypoint sh -e APP_ENV=local "$IMAGE" -lc 'touch database/database.sqlite && php artisan migrate --force --ansi'
+        docker run --rm --entrypoint sh -e APP_ENV=testing "$IMAGE" -lc 'composer install --optimize-autoloader --no-interaction --ignore-platform-reqs >/tmp/composer-dev-install.log && php artisan test --ansi && vendor/bin/pint --test --ansi'
+      displayName: Validate Laravel application
+
+    - script: |
+        set -euo pipefail
+
+        docker push "$(containerRegistry)/$(imageRepository):$(tag)"
+        docker push "$(containerRegistry)/$(imageRepository):latest"
+      displayName: Push image to container registry

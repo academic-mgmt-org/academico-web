@@ -19,13 +19,13 @@ class AuthMockService implements AuthServiceInterface
                     'username' => $username,
                     'name' => 'Usuario Mock (Simulando gRPC)',
                     'role' => 'admin',
-                ]
+                ],
             ];
         }
 
         return [
             'success' => false,
-            'message' => 'Credenciales inválidas (Simulando gRPC).'
+            'message' => 'Credenciales inválidas (Simulando gRPC).',
         ];
     }
 

@@ -89,7 +89,7 @@
 .students-container {
   width: 100%;
   aspect-ratio: 654 / 400;
-  background-image: url('/images/backgrounds/login-bg.jpg');
+  background-image: var(--login-bg-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

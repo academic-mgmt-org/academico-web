@@ -2,7 +2,13 @@
 
 namespace App\Services;
 
+use App\Grpc\Auth\AuthServiceClient;
+use App\Grpc\Auth\LoginRequest;
+use App\Grpc\Auth\LoginResponse;
+use App\Grpc\Auth\LogoutRequest;
+use App\Grpc\Auth\RefreshTokenRequest;
 use App\Services\Contracts\AuthServiceInterface;
+use Grpc\ChannelCredentials;
 use RuntimeException;
 
 class AuthGrpcService implements AuthServiceInterface
@@ -12,35 +18,35 @@ class AuthGrpcService implements AuthServiceInterface
     public function __construct()
     {
         // Lanzar excepción amigable si no se cumple el requisito de la extensión de C
-        if (!extension_loaded('grpc')) {
+        if (! extension_loaded('grpc')) {
             throw new RuntimeException("La extensión C de gRPC no está instalada en este entorno PHP. Debes instalarla ejecutando 'pecl install grpc' y agregando 'extension=grpc.so' a tu php.ini.");
         }
 
         $hostname = config('services.grpc.host', 'localhost:50051');
-        
+
         // Instancia del cliente Auth gRPC sin archivo proto generado.
-        $this->client = new \App\Grpc\Auth\AuthServiceClient($hostname, [
-            'credentials' => \Grpc\ChannelCredentials::createInsecure(),
+        $this->client = new AuthServiceClient($hostname, [
+            'credentials' => ChannelCredentials::createInsecure(),
         ]);
     }
 
     public function login(string $username, string $password): array
     {
-        $request = new \App\Grpc\Auth\LoginRequest();
+        $request = new LoginRequest;
         $request->username = $username;
         $request->password = base64_encode($password);
         $request->passwordEncoding = 'base64';
 
         // Realizar la llamada unaria de gRPC apuntando a auth.v1.AuthService/Login
         $call = $this->client->Login($request);
-        
+
         // Esperar la respuesta (retorna [Response, Status])
-        list($response, $status) = $call->wait();
+        [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {
             return [
                 'success' => false,
-                'message' => 'Error gRPC (' . $status->code . '): ' . $status->details,
+                'message' => 'Error gRPC ('.$status->code.'): '.$status->details,
             ];
         }
 
@@ -54,23 +60,23 @@ class AuthGrpcService implements AuthServiceInterface
 
     public function refresh(string $refreshToken): array
     {
-        if (!$refreshToken) {
+        if (! $refreshToken) {
             return [
                 'success' => false,
                 'message' => 'Refresh token no disponible.',
             ];
         }
 
-        $request = new \App\Grpc\Auth\RefreshTokenRequest();
+        $request = new RefreshTokenRequest;
         $request->refreshToken = $refreshToken;
 
         $call = $this->client->RefreshToken($request);
-        list($response, $status) = $call->wait();
+        [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {
             return [
                 'success' => false,
-                'message' => 'Error gRPC (' . $status->code . '): ' . $status->details,
+                'message' => 'Error gRPC ('.$status->code.'): '.$status->details,
             ];
         }
 
@@ -83,7 +89,7 @@ class AuthGrpcService implements AuthServiceInterface
 
     public function logout(?string $token = null, ?string $refreshToken = null): array
     {
-        if (!$token && !$refreshToken) {
+        if (! $token && ! $refreshToken) {
             return [
                 'success' => false,
                 'revoked' => false,
@@ -91,18 +97,18 @@ class AuthGrpcService implements AuthServiceInterface
             ];
         }
 
-        $request = new \App\Grpc\Auth\LogoutRequest();
+        $request = new LogoutRequest;
         $request->token = $token ?? '';
         $request->refreshToken = $refreshToken ?? '';
 
         $call = $this->client->Logout($request);
-        list($response, $status) = $call->wait();
+        [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {
             return [
                 'success' => false,
                 'revoked' => false,
-                'message' => 'Error gRPC (' . $status->code . '): ' . $status->details,
+                'message' => 'Error gRPC ('.$status->code.'): '.$status->details,
             ];
         }
 
@@ -124,7 +130,7 @@ class AuthGrpcService implements AuthServiceInterface
         }
 
         $payload = $parts[1];
-        
+
         // Convertir de Base64Url a Base64 estándar
         $remainder = strlen($payload) % 4;
         if ($remainder) {
@@ -134,7 +140,7 @@ class AuthGrpcService implements AuthServiceInterface
         $payload = strtr($payload, '-_', '+/');
 
         $decoded = base64_decode($payload);
-        if (!$decoded) {
+        if (! $decoded) {
             return null;
         }
 
@@ -142,12 +148,12 @@ class AuthGrpcService implements AuthServiceInterface
     }
 
     private function loginResponseToArray(
-        \App\Grpc\Auth\LoginResponse $response,
+        LoginResponse $response,
         string $successMessage,
         string $failureMessage,
         ?string $fallbackUsername = null
     ): array {
-        $success = !empty($response->accessToken);
+        $success = ! empty($response->accessToken);
         $userData = null;
 
         if ($success) {
@@ -168,14 +174,14 @@ class AuthGrpcService implements AuthServiceInterface
     private function userDataFromToken(string $token, ?string $fallbackUsername = null): ?array
     {
         $payload = $this->decodeJwt($token);
-        if (!$payload) {
+        if (! $payload) {
             return null;
         }
 
         $role = 'user';
-        if (!empty($payload['applications'][0]['roles'][0]['roleName'])) {
+        if (! empty($payload['applications'][0]['roles'][0]['roleName'])) {
             $role = $payload['applications'][0]['roles'][0]['roleName'];
-        } elseif (!empty($payload['role'])) {
+        } elseif (! empty($payload['role'])) {
             $role = $payload['role'];
         }
 
@@ -185,7 +191,7 @@ class AuthGrpcService implements AuthServiceInterface
             'userStudent' => $payload['userStudent'] ?? '',
             'userName' => $payload['userName'] ?? '',
             'role' => $role,
-            'permissions' => $payload['applications'][0]['roles'][0]['permissions'] ?? []
+            'permissions' => $payload['applications'][0]['roles'][0]['permissions'] ?? [],
         ];
     }
 }

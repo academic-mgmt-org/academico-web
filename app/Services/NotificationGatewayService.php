@@ -9,12 +9,12 @@ class NotificationGatewayService
 {
     public function recent(?string $token, ?array $user = null, int $limit = 3): ?array
     {
-        if (!$token) {
+        if (! $token) {
             return null;
         }
 
         $baseUrl = rtrim((string) config('services.gateway.url'), '/');
-        $path = '/' . ltrim((string) config('services.notifications.recent_path'), '/');
+        $path = '/'.ltrim((string) config('services.notifications.recent_path'), '/');
 
         try {
             $curlOptions = [];
@@ -26,11 +26,11 @@ class NotificationGatewayService
                 ->withToken($token)
                 ->withOptions($curlOptions ? ['curl' => $curlOptions] : [])
                 ->timeout(5)
-                ->get($baseUrl . $path, [
+                ->get($baseUrl.$path, [
                     'limit' => $limit,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('No se pudieron obtener notificaciones desde gateway', [
                     'status' => $response->status(),
                     'user' => $user['username'] ?? null,

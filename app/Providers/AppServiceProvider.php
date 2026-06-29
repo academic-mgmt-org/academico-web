@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\AuthGrpcService;
+use App\Services\AuthMockService;
+use App\Services\Contracts\AuthServiceInterface;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -12,15 +15,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(
-            \App\Services\Contracts\AuthServiceInterface::class,
+            AuthServiceInterface::class,
             function ($app) {
                 $driver = config('services.grpc.driver', 'mock');
 
                 if ($driver === 'grpc' && extension_loaded('grpc')) {
-                    return new \App\Services\AuthGrpcService();
+                    return new AuthGrpcService;
                 }
 
-                return new \App\Services\AuthMockService();
+                return new AuthMockService;
             }
         );
     }

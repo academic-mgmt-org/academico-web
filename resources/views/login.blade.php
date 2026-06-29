@@ -51,7 +51,7 @@ $page_title = "Sistema Académico - Iniciar sesión";
         </div>
 
         <!-- Blended Student/Building Graphics -->
-        <div class="students-container"></div>
+        <div class="students-container" style="--login-bg-image: url('{{ asset('images/backgrounds/login-bg.jpg') }}')"></div>
 
         <!-- Bottom Icons Section -->
         <div class="features-section">
