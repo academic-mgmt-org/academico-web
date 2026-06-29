@@ -70,6 +70,14 @@ docker compose up -d --build
 
 El contenedor expone los puertos `80` y `443` y monta `.env`, `database/` y `storage/` desde el host.
 
+## Imagen Docker
+
+El pipeline de Azure DevOps publica la imagen en Azure Container Registry con el tag del build y con `latest`:
+
+```bash
+docker pull acracademicoutn.azurecr.io/academicmgmtorgacademicoweb:latest
+```
+
 ## Pruebas
 
 ```bash
