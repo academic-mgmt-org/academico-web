@@ -1,5 +1,5 @@
 # Docker
-# Build and push academico-web image to Azure Container Registry
+# Build, validate, publish and deploy academico-web image to Azure servers.
 
 trigger:
   branches:
@@ -19,13 +19,30 @@ variables:
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
 
+  serviceName: 'app'
+  devSshHost: '20.122.210.230'
+  prodSshHost: '20.96.156.43'
+  sshUser: 'azureuser'
+  devRemoteAppPath: '/home/azureuser/academico-web'
+  prodRemoteAppPath: '/home/azureuser/academico-web'
+  composeFile: 'docker-compose.yml'
+  httpPort: '80'
+  httpsPort: '443'
+
+  serviceDriver: 'mock'
+  serviceGrpcHost: 'host.docker.internal:50051'
+  gatewayUrl: 'http://host.docker.internal:3000'
+  notificationsRecentPath: '/notificaciones/api/v1/notificaciones/recientes'
+
+  productionApprover: 'gacalderonr@utn.edu.ec'
+
 stages:
 - stage: Build
-  displayName: Build and push stage
+  displayName: Build, validate and push image
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
   jobs:
   - job: Build
-    displayName: Build
+    displayName: Build and validate
     pool:
       vmImage: $(vmImageName)
     steps:
@@ -64,3 +81,409 @@ stages:
         docker push "$(containerRegistry)/$(imageRepository):$(tag)"
         docker push "$(containerRegistry)/$(imageRepository):latest"
       displayName: Push image to container registry
+
+- stage: DeployDevelopment
+  displayName: Deploy to development server 20.122.210.230
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: DeployDevelopment
+    displayName: Deploy Docker Compose on development server
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Login to Azure Container Registry
+      inputs:
+        command: login
+        containerRegistry: $(dockerRegistryServiceConnection)
+
+    - script: |
+        set -euo pipefail
+
+        require_env() {
+          local name="$1"
+          local value="${!name:-}"
+
+          if [ -z "$value" ] || [[ "$value" == \$\(* ]]; then
+            echo "Missing required environment variable: $name"
+            exit 1
+          fi
+        }
+
+        for name in SSH_PRIVATE_KEY_B64 APP_KEY; do
+          require_env "$name"
+        done
+
+        IMAGE="${CONTAINER_REGISTRY}/${IMAGE_REPOSITORY}:${TAG}"
+        SSH_DIR="$(mktemp -d)"
+        ENV_FILE_LOCAL="$(mktemp)"
+
+        cleanup() {
+          rm -rf "$SSH_DIR" "$ENV_FILE_LOCAL"
+        }
+        trap cleanup EXIT
+
+        if [ ! -f "$COMPOSE_SOURCE_FILE" ]; then
+          echo "Missing compose source file: $COMPOSE_SOURCE_FILE"
+          exit 1
+        fi
+
+        mkdir -p "$SSH_DIR"
+        chmod 700 "$SSH_DIR"
+        printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > "$SSH_DIR/key"
+        chmod 600 "$SSH_DIR/key"
+        ssh-keyscan -T 10 "$SSH_HOST" > "$SSH_DIR/known_hosts"
+
+        SSH_OPTS=(
+          -i "$SSH_DIR/key"
+          -o IdentitiesOnly=yes
+          -o UserKnownHostsFile="$SSH_DIR/known_hosts"
+          -o StrictHostKeyChecking=yes
+        )
+        REMOTE="${SSH_USER}@${SSH_HOST}"
+
+        DOCKER_CONFIG_FILE="${DOCKER_CONFIG:-$HOME/.docker}/config.json"
+        if [ ! -f "$DOCKER_CONFIG_FILE" ]; then
+          echo "Missing Docker config after ACR login: $DOCKER_CONFIG_FILE"
+          exit 1
+        fi
+
+        echo "Copying ACR Docker login to development server..."
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "mkdir -p ~/.docker && umask 077 && cat > ~/.docker/config.json" < "$DOCKER_CONFIG_FILE"
+
+        umask 077
+        {
+          printf 'ACADEMICO_WEB_IMAGE=%s\n' "$IMAGE"
+          printf 'APP_NAME=AcademicoWeb\n'
+          printf 'APP_ENV=%s\n' "$TARGET_APP_ENV"
+          printf 'APP_KEY=%s\n' "$APP_KEY"
+          printf 'APP_DEBUG=%s\n' "$APP_DEBUG"
+          printf 'APP_URL=%s\n' "$APP_URL"
+          printf 'APP_LOCALE=en\n'
+          printf 'APP_FALLBACK_LOCALE=en\n'
+          printf 'APP_FAKER_LOCALE=en_US\n'
+          printf 'APP_MAINTENANCE_DRIVER=file\n'
+          printf 'BCRYPT_ROUNDS=12\n'
+          printf 'LOG_CHANNEL=stack\n'
+          printf 'LOG_STACK=single\n'
+          printf 'LOG_DEPRECATIONS_CHANNEL=null\n'
+          printf 'LOG_LEVEL=debug\n'
+          printf 'DB_CONNECTION=sqlite\n'
+          printf 'DB_DATABASE=/var/www/database/database.sqlite\n'
+          printf 'SESSION_DRIVER=database\n'
+          printf 'SESSION_LIFETIME=120\n'
+          printf 'SESSION_ENCRYPT=false\n'
+          printf 'SESSION_PATH=/\n'
+          printf 'SESSION_DOMAIN=null\n'
+          printf 'BROADCAST_CONNECTION=log\n'
+          printf 'FILESYSTEM_DISK=local\n'
+          printf 'QUEUE_CONNECTION=database\n'
+          printf 'CACHE_STORE=database\n'
+          printf 'MAIL_MAILER=log\n'
+          printf 'MAIL_FROM_ADDRESS=hello@example.com\n'
+          printf 'MAIL_FROM_NAME=AcademicoWeb\n'
+          printf 'VITE_APP_NAME=AcademicoWeb\n'
+          printf 'SERVICE_DRIVER=%s\n' "$SERVICE_DRIVER"
+          printf 'SERVICE_GRPC_HOST=%s\n' "$SERVICE_GRPC_HOST"
+          printf 'ACADEMICO_GATEWAY_URL=%s\n' "$ACADEMICO_GATEWAY_URL"
+          printf 'NOTIFICATIONS_RECENT_PATH=%s\n' "$NOTIFICATIONS_RECENT_PATH"
+          printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
+          printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
+        } > "$ENV_FILE_LOCAL"
+
+        echo "Updating development .env and compose file..."
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "mkdir -p '$REMOTE_APP_PATH/database' '$REMOTE_APP_PATH/storage' && umask 077 && cat > '$REMOTE_APP_PATH/.env.pipeline'" < "$ENV_FILE_LOCAL"
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "mv '$REMOTE_APP_PATH/.env.pipeline' '$REMOTE_APP_PATH/.env' && chmod 600 '$REMOTE_APP_PATH/.env'"
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "cat > '$REMOTE_APP_PATH/$COMPOSE_FILE'" < "$COMPOSE_SOURCE_FILE"
+
+        echo "Deploying development container..."
+        ssh "${SSH_OPTS[@]}" "$REMOTE" \
+          "REMOTE_APP_PATH='$REMOTE_APP_PATH' COMPOSE_FILE='$COMPOSE_FILE' SERVICE_NAME='$SERVICE_NAME' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' bash -se" << 'REMOTE_SCRIPT'
+        set -euo pipefail
+
+        cd "$REMOTE_APP_PATH"
+
+        show_port_usage() {
+          echo "Containers publishing configured web ports:"
+          docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}' \
+            | awk -v http="$HTTP_PORT" -v https="$HTTPS_PORT" 'NR == 1 || index($0, ":" http "->") > 0 || index($0, ":" https "->") > 0'
+        }
+
+        wait_for_service() {
+          local service="$1"
+          local attempts=24
+          local container_id=""
+          local status=""
+
+          for attempt in $(seq 1 "$attempts"); do
+            container_id="$(docker compose --env-file .env -f "$COMPOSE_FILE" ps -q "$service" || true)"
+            if [ -n "$container_id" ]; then
+              status="$(docker inspect -f '{{.State.Status}}' "$container_id" 2>/dev/null || true)"
+              if [ "$status" = "running" ]; then
+                return 0
+              fi
+            fi
+            sleep 5
+          done
+
+          echo "Service $service did not stay running."
+          show_port_usage
+          docker compose --env-file .env -f "$COMPOSE_FILE" ps || true
+          docker compose --env-file .env -f "$COMPOSE_FILE" logs --tail=200 "$service" || true
+          exit 1
+        }
+
+        echo "Stopping previous compose project..."
+        docker compose --env-file .env -f "$COMPOSE_FILE" down --remove-orphans || true
+
+        echo "Pulling web image..."
+        docker compose --env-file .env -f "$COMPOSE_FILE" pull "$SERVICE_NAME"
+
+        echo "Starting web service..."
+        docker compose --env-file .env -f "$COMPOSE_FILE" up -d --remove-orphans --no-build "$SERVICE_NAME"
+
+        echo "Verifying web service..."
+        wait_for_service "$SERVICE_NAME"
+        docker compose --env-file .env -f "$COMPOSE_FILE" ps
+
+        echo "Cleaning up dangling images..."
+        docker image prune -f
+
+        echo "Development deployment completed."
+        REMOTE_SCRIPT
+      displayName: Deploy academico-web to development
+      env:
+        CONTAINER_REGISTRY: $(containerRegistry)
+        IMAGE_REPOSITORY: $(imageRepository)
+        TAG: $(tag)
+        SSH_HOST: $(devSshHost)
+        SSH_USER: $(sshUser)
+        REMOTE_APP_PATH: $(devRemoteAppPath)
+        COMPOSE_FILE: $(composeFile)
+        COMPOSE_SOURCE_FILE: $(Build.SourcesDirectory)/$(composeFile)
+        SERVICE_NAME: $(serviceName)
+        SSH_PRIVATE_KEY_B64: $(PROD_SSH_PRIVATE_KEY_B64)
+        APP_KEY: $(APP_KEY)
+        TARGET_APP_ENV: local
+        APP_DEBUG: 'true'
+        APP_URL: http://$(devSshHost)
+        SERVICE_DRIVER: $(serviceDriver)
+        SERVICE_GRPC_HOST: $(serviceGrpcHost)
+        ACADEMICO_GATEWAY_URL: $(gatewayUrl)
+        NOTIFICATIONS_RECENT_PATH: $(notificationsRecentPath)
+        HTTP_PORT: $(httpPort)
+        HTTPS_PORT: $(httpsPort)
+
+- stage: ApproveProduction
+  displayName: Approve production deployment to 20.96.156.43
+  dependsOn: DeployDevelopment
+  condition: succeeded()
+  jobs:
+  - job: WaitForProductionApproval
+    displayName: Await production approval
+    pool: server
+    timeoutInMinutes: 1440
+    steps:
+    - task: ManualValidation@1
+      displayName: Approve production deployment
+      timeoutInMinutes: 1440
+      inputs:
+        notifyUsers: $(productionApprover)
+        approvers: $(productionApprover)
+        allowApproversToApproveTheirOwnRuns: true
+        instructions: 'Approve to deploy academico-web to production server 20.96.156.43.'
+        onTimeout: reject
+
+- stage: DeployProduction
+  displayName: Deploy to production server 20.96.156.43
+  dependsOn: ApproveProduction
+  condition: succeeded()
+  jobs:
+  - job: DeployProduction
+    displayName: Deploy Docker Compose on production server
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Login to Azure Container Registry
+      inputs:
+        command: login
+        containerRegistry: $(dockerRegistryServiceConnection)
+
+    - script: |
+        set -euo pipefail
+
+        require_env() {
+          local name="$1"
+          local value="${!name:-}"
+
+          if [ -z "$value" ] || [[ "$value" == \$\(* ]]; then
+            echo "Missing required environment variable: $name"
+            exit 1
+          fi
+        }
+
+        for name in SSH_PRIVATE_KEY_B64 APP_KEY; do
+          require_env "$name"
+        done
+
+        IMAGE="${CONTAINER_REGISTRY}/${IMAGE_REPOSITORY}:${TAG}"
+        SSH_DIR="$(mktemp -d)"
+        ENV_FILE_LOCAL="$(mktemp)"
+
+        cleanup() {
+          rm -rf "$SSH_DIR" "$ENV_FILE_LOCAL"
+        }
+        trap cleanup EXIT
+
+        if [ ! -f "$COMPOSE_SOURCE_FILE" ]; then
+          echo "Missing compose source file: $COMPOSE_SOURCE_FILE"
+          exit 1
+        fi
+
+        mkdir -p "$SSH_DIR"
+        chmod 700 "$SSH_DIR"
+        printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > "$SSH_DIR/key"
+        chmod 600 "$SSH_DIR/key"
+        ssh-keyscan -T 10 "$SSH_HOST" > "$SSH_DIR/known_hosts"
+
+        SSH_OPTS=(
+          -i "$SSH_DIR/key"
+          -o IdentitiesOnly=yes
+          -o UserKnownHostsFile="$SSH_DIR/known_hosts"
+          -o StrictHostKeyChecking=yes
+        )
+        REMOTE="${SSH_USER}@${SSH_HOST}"
+
+        DOCKER_CONFIG_FILE="${DOCKER_CONFIG:-$HOME/.docker}/config.json"
+        if [ ! -f "$DOCKER_CONFIG_FILE" ]; then
+          echo "Missing Docker config after ACR login: $DOCKER_CONFIG_FILE"
+          exit 1
+        fi
+
+        echo "Copying ACR Docker login to production server..."
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "mkdir -p ~/.docker && umask 077 && cat > ~/.docker/config.json" < "$DOCKER_CONFIG_FILE"
+
+        umask 077
+        {
+          printf 'ACADEMICO_WEB_IMAGE=%s\n' "$IMAGE"
+          printf 'APP_NAME=AcademicoWeb\n'
+          printf 'APP_ENV=%s\n' "$TARGET_APP_ENV"
+          printf 'APP_KEY=%s\n' "$APP_KEY"
+          printf 'APP_DEBUG=%s\n' "$APP_DEBUG"
+          printf 'APP_URL=%s\n' "$APP_URL"
+          printf 'APP_LOCALE=en\n'
+          printf 'APP_FALLBACK_LOCALE=en\n'
+          printf 'APP_FAKER_LOCALE=en_US\n'
+          printf 'APP_MAINTENANCE_DRIVER=file\n'
+          printf 'BCRYPT_ROUNDS=12\n'
+          printf 'LOG_CHANNEL=stack\n'
+          printf 'LOG_STACK=single\n'
+          printf 'LOG_DEPRECATIONS_CHANNEL=null\n'
+          printf 'LOG_LEVEL=debug\n'
+          printf 'DB_CONNECTION=sqlite\n'
+          printf 'DB_DATABASE=/var/www/database/database.sqlite\n'
+          printf 'SESSION_DRIVER=database\n'
+          printf 'SESSION_LIFETIME=120\n'
+          printf 'SESSION_ENCRYPT=false\n'
+          printf 'SESSION_PATH=/\n'
+          printf 'SESSION_DOMAIN=null\n'
+          printf 'BROADCAST_CONNECTION=log\n'
+          printf 'FILESYSTEM_DISK=local\n'
+          printf 'QUEUE_CONNECTION=database\n'
+          printf 'CACHE_STORE=database\n'
+          printf 'MAIL_MAILER=log\n'
+          printf 'MAIL_FROM_ADDRESS=hello@example.com\n'
+          printf 'MAIL_FROM_NAME=AcademicoWeb\n'
+          printf 'VITE_APP_NAME=AcademicoWeb\n'
+          printf 'SERVICE_DRIVER=%s\n' "$SERVICE_DRIVER"
+          printf 'SERVICE_GRPC_HOST=%s\n' "$SERVICE_GRPC_HOST"
+          printf 'ACADEMICO_GATEWAY_URL=%s\n' "$ACADEMICO_GATEWAY_URL"
+          printf 'NOTIFICATIONS_RECENT_PATH=%s\n' "$NOTIFICATIONS_RECENT_PATH"
+          printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
+          printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
+        } > "$ENV_FILE_LOCAL"
+
+        echo "Updating production .env and compose file..."
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "mkdir -p '$REMOTE_APP_PATH/database' '$REMOTE_APP_PATH/storage' && umask 077 && cat > '$REMOTE_APP_PATH/.env.pipeline'" < "$ENV_FILE_LOCAL"
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "mv '$REMOTE_APP_PATH/.env.pipeline' '$REMOTE_APP_PATH/.env' && chmod 600 '$REMOTE_APP_PATH/.env'"
+        ssh "${SSH_OPTS[@]}" "$REMOTE" "cat > '$REMOTE_APP_PATH/$COMPOSE_FILE'" < "$COMPOSE_SOURCE_FILE"
+
+        echo "Deploying production container..."
+        ssh "${SSH_OPTS[@]}" "$REMOTE" \
+          "REMOTE_APP_PATH='$REMOTE_APP_PATH' COMPOSE_FILE='$COMPOSE_FILE' SERVICE_NAME='$SERVICE_NAME' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' bash -se" << 'REMOTE_SCRIPT'
+        set -euo pipefail
+
+        cd "$REMOTE_APP_PATH"
+
+        show_port_usage() {
+          echo "Containers publishing configured web ports:"
+          docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}' \
+            | awk -v http="$HTTP_PORT" -v https="$HTTPS_PORT" 'NR == 1 || index($0, ":" http "->") > 0 || index($0, ":" https "->") > 0'
+        }
+
+        wait_for_service() {
+          local service="$1"
+          local attempts=24
+          local container_id=""
+          local status=""
+
+          for attempt in $(seq 1 "$attempts"); do
+            container_id="$(docker compose --env-file .env -f "$COMPOSE_FILE" ps -q "$service" || true)"
+            if [ -n "$container_id" ]; then
+              status="$(docker inspect -f '{{.State.Status}}' "$container_id" 2>/dev/null || true)"
+              if [ "$status" = "running" ]; then
+                return 0
+              fi
+            fi
+            sleep 5
+          done
+
+          echo "Service $service did not stay running."
+          show_port_usage
+          docker compose --env-file .env -f "$COMPOSE_FILE" ps || true
+          docker compose --env-file .env -f "$COMPOSE_FILE" logs --tail=200 "$service" || true
+          exit 1
+        }
+
+        echo "Stopping previous compose project..."
+        docker compose --env-file .env -f "$COMPOSE_FILE" down --remove-orphans || true
+
+        echo "Pulling web image..."
+        docker compose --env-file .env -f "$COMPOSE_FILE" pull "$SERVICE_NAME"
+
+        echo "Starting web service..."
+        docker compose --env-file .env -f "$COMPOSE_FILE" up -d --remove-orphans --no-build "$SERVICE_NAME"
+
+        echo "Verifying web service..."
+        wait_for_service "$SERVICE_NAME"
+        docker compose --env-file .env -f "$COMPOSE_FILE" ps
+
+        echo "Cleaning up dangling images..."
+        docker image prune -f
+
+        echo "Production deployment completed."
+        REMOTE_SCRIPT
+      displayName: Deploy academico-web to production
+      env:
+        CONTAINER_REGISTRY: $(containerRegistry)
+        IMAGE_REPOSITORY: $(imageRepository)
+        TAG: $(tag)
+        SSH_HOST: $(prodSshHost)
+        SSH_USER: $(sshUser)
+        REMOTE_APP_PATH: $(prodRemoteAppPath)
+        COMPOSE_FILE: $(composeFile)
+        COMPOSE_SOURCE_FILE: $(Build.SourcesDirectory)/$(composeFile)
+        SERVICE_NAME: $(serviceName)
+        SSH_PRIVATE_KEY_B64: $(PROD_SSH_PRIVATE_KEY_B64)
+        APP_KEY: $(APP_KEY)
+        TARGET_APP_ENV: production
+        APP_DEBUG: 'false'
+        APP_URL: http://$(prodSshHost)
+        SERVICE_DRIVER: $(serviceDriver)
+        SERVICE_GRPC_HOST: $(serviceGrpcHost)
+        ACADEMICO_GATEWAY_URL: $(gatewayUrl)
+        NOTIFICATIONS_RECENT_PATH: $(notificationsRecentPath)
+        HTTP_PORT: $(httpPort)
+        HTTPS_PORT: $(httpsPort)
