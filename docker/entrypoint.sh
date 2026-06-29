@@ -11,6 +11,23 @@ if [ ! -f .env ]; then
     fi
 fi
 
+: "${NGINX_SERVER_NAME:=localhost}"
+: "${NGINX_SSL_CERTIFICATE:=/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem}"
+: "${NGINX_SSL_CERTIFICATE_KEY:=/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem}"
+export NGINX_SERVER_NAME NGINX_SSL_CERTIFICATE NGINX_SSL_CERTIFICATE_KEY
+
+echo "Rendering Nginx configuration for ${NGINX_SERVER_NAME}..."
+envsubst '${NGINX_SERVER_NAME} ${NGINX_SSL_CERTIFICATE} ${NGINX_SSL_CERTIFICATE_KEY}' \
+    < /etc/nginx/templates/default.conf.template \
+    > /etc/nginx/http.d/default.conf
+
+if [ ! -f "$NGINX_SSL_CERTIFICATE" ] || [ ! -f "$NGINX_SSL_CERTIFICATE_KEY" ]; then
+    echo "Missing TLS certificate files for ${NGINX_SERVER_NAME}:"
+    echo "  certificate: ${NGINX_SSL_CERTIFICATE}"
+    echo "  key: ${NGINX_SSL_CERTIFICATE_KEY}"
+    exit 1
+fi
+
 # Run database migrations for SQLite (create file if not exists)
 if [ "${DB_CONNECTION}" = "sqlite" ] || [ -z "${DB_CONNECTION}" ]; then
     DB_DATABASE=$(php artisan tinker --execute="echo config('database.connections.sqlite.database');")

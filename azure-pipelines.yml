@@ -22,6 +22,8 @@ variables:
   serviceName: 'app'
   devSshHost: '20.122.210.230'
   prodSshHost: '20.96.156.43'
+  devAppHost: 'academia-dev.eastus2.cloudapp.azure.com'
+  prodAppHost: 'academia-utn.eastus2.cloudapp.azure.com'
   sshUser: 'azureuser'
   devRemoteAppPath: '/home/azureuser/academico-web'
   prodRemoteAppPath: '/home/azureuser/academico-web'
@@ -111,7 +113,7 @@ stages:
           fi
         }
 
-        for name in SSH_PRIVATE_KEY_B64 APP_KEY; do
+        for name in SSH_PRIVATE_KEY_B64 APP_KEY APP_URL NGINX_SERVER_NAME; do
           require_env "$name"
         done
 
@@ -190,6 +192,7 @@ stages:
           printf 'NOTIFICATIONS_RECENT_PATH=%s\n' "$NOTIFICATIONS_RECENT_PATH"
           printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
           printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
+          printf 'NGINX_SERVER_NAME=%s\n' "$NGINX_SERVER_NAME"
         } > "$ENV_FILE_LOCAL"
 
         echo "Updating development .env and compose file..."
@@ -267,7 +270,8 @@ stages:
         APP_KEY: $(APP_KEY)
         TARGET_APP_ENV: local
         APP_DEBUG: 'true'
-        APP_URL: http://$(devSshHost)
+        APP_URL: https://$(devAppHost)
+        NGINX_SERVER_NAME: $(devAppHost)
         SERVICE_DRIVER: $(serviceDriver)
         SERVICE_GRPC_HOST: $(serviceGrpcHost)
         ACADEMICO_GATEWAY_URL: $(gatewayUrl)
@@ -324,7 +328,7 @@ stages:
           fi
         }
 
-        for name in SSH_PRIVATE_KEY_B64 APP_KEY; do
+        for name in SSH_PRIVATE_KEY_B64 APP_KEY APP_URL NGINX_SERVER_NAME; do
           require_env "$name"
         done
 
@@ -403,6 +407,7 @@ stages:
           printf 'NOTIFICATIONS_RECENT_PATH=%s\n' "$NOTIFICATIONS_RECENT_PATH"
           printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
           printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
+          printf 'NGINX_SERVER_NAME=%s\n' "$NGINX_SERVER_NAME"
         } > "$ENV_FILE_LOCAL"
 
         echo "Updating production .env and compose file..."
@@ -480,7 +485,8 @@ stages:
         APP_KEY: $(APP_KEY)
         TARGET_APP_ENV: production
         APP_DEBUG: 'false'
-        APP_URL: http://$(prodSshHost)
+        APP_URL: https://$(prodAppHost)
+        NGINX_SERVER_NAME: $(prodAppHost)
         SERVICE_DRIVER: $(serviceDriver)
         SERVICE_GRPC_HOST: $(serviceGrpcHost)
         ACADEMICO_GATEWAY_URL: $(gatewayUrl)

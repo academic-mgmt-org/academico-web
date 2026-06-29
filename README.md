@@ -44,6 +44,8 @@ Variables relevantes:
 - `SERVICE_DRIVER`: `mock` para desarrollo local sin gRPC, `grpc` para integracion real.
 - `SERVICE_GRPC_HOST`: host y puerto del servicio gRPC configurado.
 - `APP_URL`: URL publica de la aplicacion.
+- `NGINX_SERVER_NAME`: dominio publico usado por Nginx para HTTPS.
+- `NGINX_SSL_CERTIFICATE` y `NGINX_SSL_CERTIFICATE_KEY`: rutas opcionales de certificado TLS. Si no se configuran, se usan las rutas de Let's Encrypt para `NGINX_SERVER_NAME`.
 - `DB_CONNECTION`: por defecto `sqlite`.
 
 ## Ejecucion local
@@ -69,6 +71,7 @@ docker compose up -d --build
 ```
 
 El contenedor expone los puertos `80` y `443` y monta `.env`, `database/` y `storage/` desde el host.
+Para HTTPS, monta `/etc/letsencrypt` desde el host y configura `NGINX_SERVER_NAME` con el dominio del ambiente.
 
 ## Imagen Docker
 

@@ -17,6 +17,7 @@ WORKDIR /var/www
 RUN apk add --no-cache \
     git \
     curl \
+    gettext-envsubst \
     zip \
     unzip \
     nginx \
@@ -95,7 +96,8 @@ RUN chown -R www-data:www-data /var/www \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Copy docker configuration files
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+RUN mkdir -p /etc/nginx/templates
+COPY docker/nginx.conf /etc/nginx/templates/default.conf.template
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
