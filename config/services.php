@@ -38,6 +38,7 @@ return [
     'grpc' => [
         'host' => env('SERVICE_GRPC_HOST', 'localhost:50051'),
         'driver' => env('SERVICE_DRIVER', 'mock'),
+        'timeout_ms' => env('SERVICE_GRPC_TIMEOUT_MS', 15000),
     ],
 
     'gateway' => [

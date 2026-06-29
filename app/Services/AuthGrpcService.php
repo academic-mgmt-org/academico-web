@@ -15,6 +15,8 @@ class AuthGrpcService implements AuthServiceInterface
 {
     protected $client;
 
+    protected array $callOptions;
+
     public function __construct()
     {
         // Lanzar excepción amigable si no se cumple el requisito de la extensión de C
@@ -28,6 +30,9 @@ class AuthGrpcService implements AuthServiceInterface
         $this->client = new AuthServiceClient($hostname, [
             'credentials' => ChannelCredentials::createInsecure(),
         ]);
+
+        $timeoutMs = max(1000, (int) config('services.grpc.timeout_ms', 15000));
+        $this->callOptions = ['timeout' => $timeoutMs * 1000];
     }
 
     public function login(string $username, string $password): array
@@ -38,7 +43,7 @@ class AuthGrpcService implements AuthServiceInterface
         $request->passwordEncoding = 'base64';
 
         // Realizar la llamada unaria de gRPC apuntando a auth.v1.AuthService/Login
-        $call = $this->client->Login($request);
+        $call = $this->client->Login($request, [], $this->callOptions);
 
         // Esperar la respuesta (retorna [Response, Status])
         [$response, $status] = $call->wait();
@@ -70,7 +75,7 @@ class AuthGrpcService implements AuthServiceInterface
         $request = new RefreshTokenRequest;
         $request->refreshToken = $refreshToken;
 
-        $call = $this->client->RefreshToken($request);
+        $call = $this->client->RefreshToken($request, [], $this->callOptions);
         [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {
@@ -101,7 +106,7 @@ class AuthGrpcService implements AuthServiceInterface
         $request->token = $token ?? '';
         $request->refreshToken = $refreshToken ?? '';
 
-        $call = $this->client->Logout($request);
+        $call = $this->client->Logout($request, [], $this->callOptions);
         [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {
