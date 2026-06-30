@@ -45,6 +45,14 @@ class AuthMockService implements AuthServiceInterface
         ];
     }
 
+    public function forgotPassword(string $email): array
+    {
+        return [
+            'success' => true,
+            'message' => 'Si el correo existe, enviaremos un enlace para recuperar la contraseña. (Simulando gRPC).',
+        ];
+    }
+
     public function logout(?string $token = null, ?string $refreshToken = null): array
     {
         return [

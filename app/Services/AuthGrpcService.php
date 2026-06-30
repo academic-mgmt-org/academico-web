@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Grpc\Auth\AuthServiceClient;
+use App\Grpc\Auth\ForgotPasswordRequest;
 use App\Grpc\Auth\LoginRequest;
 use App\Grpc\Auth\LoginResponse;
 use App\Grpc\Auth\LogoutRequest;
@@ -90,6 +91,27 @@ class AuthGrpcService implements AuthServiceInterface
             'Sesión renovada correctamente.',
             'No se pudo renovar la sesión.'
         );
+    }
+
+    public function forgotPassword(string $email): array
+    {
+        $request = new ForgotPasswordRequest;
+        $request->email = trim(strtolower($email));
+
+        $call = $this->client->ForgotPassword($request);
+        [$response, $status] = $call->wait();
+
+        if ($status->code !== \Grpc\STATUS_OK) {
+            return [
+                'success' => false,
+                'message' => 'Error gRPC ('.$status->code.'): '.$status->details,
+            ];
+        }
+
+        return [
+            'success' => (bool) $response->success,
+            'message' => $response->message ?: 'Si el correo existe, enviaremos un enlace para recuperar la contraseña.',
+        ];
     }
 
     public function logout(?string $token = null, ?string $refreshToken = null): array

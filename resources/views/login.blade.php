@@ -116,8 +116,10 @@ $page_title = "Sistema Académico - Iniciar sesión";
                 <input type="checkbox" id="rememberMe">
                 Recordarme
               </label>
-              <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+              <button type="button" class="forgot-link" id="forgotPasswordBtn">¿Olvidaste tu contraseña?</button>
             </div>
+
+            <div class="form-status" id="authStatus" role="status" aria-live="polite" hidden></div>
 
             <!-- Submit Button -->
             <button type="submit" class="login-btn">

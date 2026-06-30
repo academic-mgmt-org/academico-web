@@ -65,6 +65,24 @@ Route::post('/api/auth/refresh', function (Request $request, AuthServiceInterfac
     return response()->json($result, 401);
 });
 
+Route::post('/api/auth/forgot-password', function (Request $request, AuthServiceInterface $authService) {
+    $email = trim(strtolower((string) $request->input('email')));
+
+    if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Correo electrónico inválido.',
+        ], 400);
+    }
+
+    $result = $authService->forgotPassword($email);
+
+    return response()->json([
+        'success' => (bool) ($result['success'] ?? false),
+        'message' => $result['message'] ?? 'Si el correo existe, enviaremos un enlace para recuperar la contraseña.',
+    ], ($result['success'] ?? false) ? 200 : 502);
+});
+
 Route::post('/api/auth/logout', function (Request $request, AuthServiceInterface $authService) {
     $token = $request->input('token') ?: session('user_token');
     $refreshToken = $request->input('refreshToken') ?: session('user_refresh_token');

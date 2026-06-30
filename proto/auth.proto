@@ -8,6 +8,7 @@ option php_metadata_namespace = "App\\Grpc\\Auth\\GPBMetadata";
 service AuthService {
     rpc Login (LoginRequest) returns (LoginResponse);
     rpc RefreshToken (RefreshTokenRequest) returns (LoginResponse);
+    rpc ForgotPassword (ForgotPasswordRequest) returns (GenericResponse);
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
     rpc Logout (LogoutRequest) returns (GenericResponse);
 }
@@ -31,6 +32,10 @@ message LoginResponse {
 
 message RefreshTokenRequest {
     string refresh_token = 1;
+}
+
+message ForgotPasswordRequest {
+    string email = 1;
 }
 
 message ValidateTokenRequest {
