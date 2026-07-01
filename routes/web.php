@@ -79,7 +79,7 @@ Route::post('/api/auth/forgot-password', function (Request $request, AuthService
 
     return response()->json([
         'success' => (bool) ($result['success'] ?? false),
-        'message' => $result['message'] ?? 'Si el correo existe, enviaremos un enlace para recuperar la contraseña.',
+        'message' => $result['message'] ?? 'Si hay una cuenta asociada a ese correo, enviaremos instrucciones en los próximos minutos. Revisa también spam o correo no deseado. Si no recibes nada, verifica que escribiste el correo correcto o contacta soporte académico.',
     ], ($result['success'] ?? false) ? 200 : 502);
 });
 
