@@ -15,6 +15,11 @@ interface AuthServiceInterface
     public function refresh(string $refreshToken): array;
 
     /**
+     * Request a password recovery email.
+     */
+    public function forgotPassword(string $email): array;
+
+    /**
      * Close the current authenticated session through the auth service.
      */
     public function logout(?string $token = null, ?string $refreshToken = null): array;

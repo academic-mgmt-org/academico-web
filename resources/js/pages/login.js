@@ -1,5 +1,5 @@
 // Login Page Logic
-import { login, refreshSession } from '../services/auth.service.js';
+import { forgotPassword, login, refreshSession } from '../services/auth.service.js';
 
 let redirectCheckPromise = null;
 
@@ -54,6 +54,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const passwordInput = document.getElementById('password');
   const passwordToggle = document.getElementById('passwordToggle');
+  const emailInput = document.getElementById('email');
+  const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+  const authStatus = document.getElementById('authStatus');
+
+  function showStatus(type, message) {
+    if (!authStatus) {
+      return;
+    }
+
+    authStatus.hidden = false;
+    authStatus.className = `form-status is-${type}`;
+    authStatus.textContent = message;
+  }
+
+  function clearStatus() {
+    if (!authStatus) {
+      return;
+    }
+
+    authStatus.hidden = true;
+    authStatus.className = 'form-status';
+    authStatus.textContent = '';
+  }
 
   if (passwordInput && passwordToggle) {
     // Password visibility toggle logic
@@ -80,15 +103,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  if (forgotPasswordBtn && emailInput) {
+    forgotPasswordBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+
+      if (!email) {
+        showStatus('error', 'Ingresa tu correo electrónico.');
+        emailInput.focus();
+        return;
+      }
+
+      const originalText = forgotPasswordBtn.textContent;
+      forgotPasswordBtn.disabled = true;
+      forgotPasswordBtn.textContent = 'Enviando...';
+      clearStatus();
+
+      try {
+        const response = await forgotPassword(email);
+        showStatus(
+          response.success ? 'success' : 'error',
+          response.message || 'No se pudo procesar la solicitud.',
+        );
+      } catch (error) {
+        console.error('Error solicitando recuperación de contraseña:', error);
+        showStatus('error', 'No se pudo comunicar con el servidor.');
+      } finally {
+        forgotPasswordBtn.disabled = false;
+        forgotPasswordBtn.textContent = originalText;
+      }
+    });
+  }
+
   // Handle form submission
   const form = document.querySelector('form');
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const emailInput = document.getElementById('email');
       const email = emailInput ? emailInput.value : '';
       const password = passwordInput ? passwordInput.value : '';
+      clearStatus();
 
       try {
         const response = await login(email, password);
@@ -108,11 +162,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Inicio de sesión exitoso. Pero el rol (' + (response.user ? response.user.role : 'Ninguno') + ') no está configurado para esta pantalla.');
           }
         } else {
-          alert('Error de inicio de sesión: ' + (response.message || 'Credenciales incorrectas.'));
+          showStatus('error', response.message || 'Credenciales incorrectas.');
         }
       } catch (error) {
         console.error('Error durante el inicio de sesión:', error);
-        alert('Ocurrió un error al intentar comunicarse con el servidor.');
+        showStatus('error', 'Ocurrió un error al intentar comunicarse con el servidor.');
       }
     });
   }

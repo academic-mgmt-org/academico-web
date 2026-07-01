@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Grpc\Auth\AuthServiceClient;
+use App\Grpc\Auth\ForgotPasswordRequest;
 use App\Grpc\Auth\LoginRequest;
 use App\Grpc\Auth\LoginResponse;
 use App\Grpc\Auth\LogoutRequest;
@@ -14,6 +15,8 @@ use RuntimeException;
 class AuthGrpcService implements AuthServiceInterface
 {
     protected $client;
+
+    protected array $callOptions;
 
     public function __construct()
     {
@@ -28,6 +31,9 @@ class AuthGrpcService implements AuthServiceInterface
         $this->client = new AuthServiceClient($hostname, [
             'credentials' => ChannelCredentials::createInsecure(),
         ]);
+
+        $timeoutMs = max(1000, (int) config('services.grpc.timeout_ms', 15000));
+        $this->callOptions = ['timeout' => $timeoutMs * 1000];
     }
 
     public function login(string $username, string $password): array
@@ -38,7 +44,7 @@ class AuthGrpcService implements AuthServiceInterface
         $request->passwordEncoding = 'base64';
 
         // Realizar la llamada unaria de gRPC apuntando a auth.v1.AuthService/Login
-        $call = $this->client->Login($request);
+        $call = $this->client->Login($request, [], $this->callOptions);
 
         // Esperar la respuesta (retorna [Response, Status])
         [$response, $status] = $call->wait();
@@ -70,7 +76,7 @@ class AuthGrpcService implements AuthServiceInterface
         $request = new RefreshTokenRequest;
         $request->refreshToken = $refreshToken;
 
-        $call = $this->client->RefreshToken($request);
+        $call = $this->client->RefreshToken($request, [], $this->callOptions);
         [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {
@@ -87,6 +93,27 @@ class AuthGrpcService implements AuthServiceInterface
         );
     }
 
+    public function forgotPassword(string $email): array
+    {
+        $request = new ForgotPasswordRequest;
+        $request->email = trim(strtolower($email));
+
+        $call = $this->client->ForgotPassword($request);
+        [$response, $status] = $call->wait();
+
+        if ($status->code !== \Grpc\STATUS_OK) {
+            return [
+                'success' => false,
+                'message' => 'Error gRPC ('.$status->code.'): '.$status->details,
+            ];
+        }
+
+        return [
+            'success' => (bool) $response->success,
+            'message' => $response->message ?: 'Si hay una cuenta asociada a ese correo, enviaremos instrucciones en los próximos minutos. Revisa también spam o correo no deseado. Si no recibes nada, verifica que escribiste el correo correcto o contacta soporte académico.',
+        ];
+    }
+
     public function logout(?string $token = null, ?string $refreshToken = null): array
     {
         if (! $token && ! $refreshToken) {
@@ -101,7 +128,7 @@ class AuthGrpcService implements AuthServiceInterface
         $request->token = $token ?? '';
         $request->refreshToken = $refreshToken ?? '';
 
-        $call = $this->client->Logout($request);
+        $call = $this->client->Logout($request, [], $this->callOptions);
         [$response, $status] = $call->wait();
 
         if ($status->code !== \Grpc\STATUS_OK) {

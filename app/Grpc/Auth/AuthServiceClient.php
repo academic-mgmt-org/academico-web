@@ -91,6 +91,25 @@ namespace App\Grpc\Auth {
         }
 
         /**
+         * Llama al método RPC ForgotPassword del servicio.
+         *
+         * @param \App\Grpc\Auth\ForgotPasswordRequest $argument input argument
+         * @param array $metadata metadata
+         * @param array $options call options
+         * @return mixed
+         */
+        public function ForgotPassword(\App\Grpc\Auth\ForgotPasswordRequest $argument, $metadata = [], $options = [])
+        {
+            return $this->_simpleRequest(
+                '/auth.v1.AuthService/ForgotPassword',
+                $argument,
+                ['\App\Grpc\Auth\GenericResponse', 'decode'],
+                $metadata,
+                $options
+            );
+        }
+
+        /**
          * Llama al método RPC Logout del servicio.
          *
          * @param \App\Grpc\Auth\LogoutRequest $argument input argument

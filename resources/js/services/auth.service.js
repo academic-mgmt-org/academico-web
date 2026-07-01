@@ -27,6 +27,13 @@ export async function refreshSession() {
   return response;
 }
 
+export async function forgotPassword(email) {
+  return apiFetch('auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
 export async function logout() {
   const token = localStorage.getItem('user_token');
   const refreshToken = localStorage.getItem('user_refresh_token');
